@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0b0b10">
+<title>Tienda por estilos</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<button id="btn-login" class="fab fab-login" type="button" aria-label="Iniciar sesión">
+  <span class="ico" aria-hidden="true">&#9679;</span><span id="login-label">Iniciar sesión</span>
+</button>
+<main id="app"></main>
+<button id="btn-cart" class="fab fab-cart" type="button" aria-label="Carrito">
+  <span class="ico" aria-hidden="true">&#9776;</span><span>Carrito</span><span id="cart-count" class="count">0</span>
+</button>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="js/data.js"></script>
+<script src="js/store.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
