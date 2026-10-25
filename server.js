@@ -52,9 +52,18 @@ function seedDb() {
 // En Vercel no hay disco persistente: si hay credenciales de Redis (Upstash) la base vive ahí.
 const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
 const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
-const REMOTE = !!(REDIS_URL && REDIS_TOKEN);
+const REDIS_TCP = process.env.REDIS_URL || '';
+const REMOTE = !!((REDIS_URL && REDIS_TOKEN) || REDIS_TCP);
 const REDIS_KEY = 'tienda:db';
+async function redisTcp(cmd) {
+  const { createClient } = require('redis');
+  const c = createClient({ url: REDIS_TCP, socket: { connectTimeout: 8000 } });
+  c.on('error', () => {});
+  await c.connect();
+  try { return await c.sendCommand(cmd); } finally { try { await c.quit(); } catch {} }
+}
 async function redis(cmd) {
+  if (!(REDIS_URL && REDIS_TOKEN)) return redisTcp(cmd);
   const r = await fetch(REDIS_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + REDIS_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify(cmd) });
   const j = await r.json();
   if (!r.ok || j.error) throw new Error('Redis: ' + (j.error || r.status));
@@ -321,7 +330,7 @@ async function handleServerless(req, res) {
   const cap = { code: 200, headers: {}, body: '' };
   const fake = { writeHead(c, h) { cap.code = c; cap.headers = h || {}; }, end(b) { cap.body = b; } };
   try {
-    if (!REMOTE) return fail(res, 500, 'Falta conectar la base de datos Redis (KV_REST_API_URL / KV_REST_API_TOKEN)');
+    if (!REMOTE) return fail(res, 500, 'Falta conectar la base de datos Redis (REDIS_URL)');
     const u = new URL(req.url, 'http://x');
     const p = decodeURIComponent(u.searchParams.get('p') || u.pathname);
     await loadDbRemote();
@@ -351,3 +360,4 @@ http.createServer(async (req, res) => {
   console.log('Servidor en http://localhost:' + PORT);
   console.log('Panel admin: http://localhost:' + PORT + '/admin  (usuario: ' + ADMIN_USER + ' / contraseña: ' + ADMIN_PASS + ')');
 });
+
